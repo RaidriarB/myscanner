@@ -5,7 +5,5 @@ func add(a, b int) int {
 }
 
 func main() {
-	// TODO: config = LoadConfig()
-	//
 
 }

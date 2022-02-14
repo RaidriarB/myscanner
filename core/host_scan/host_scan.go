@@ -1,10 +1,13 @@
-// 生成待扫描的IP
+// 检测给出的IP的存活性
 package host_scan
 
 import (
-	"fmt"
 	"myscanner/core/types"
+	"myscanner/lib/pool"
+	"myscanner/lib/slog"
 	"net"
+	"strings"
+	"sync"
 
 	"github.com/c-robinson/iplib"
 )
@@ -30,37 +33,75 @@ func LoadTargets(c types.Config) types.Targets {
 
 //检查主机存活性，返回存活的主机列表
 func ScanTargets(t types.Targets) []string {
-	// TODO: implement 现在只是一个小demo
 	// FIXME: 需不需要Config参数？
-
 	aliveHosts := []string{}
+	// TODO: 把这个10改成配置
+	var p = pool.NewPool(10)
 
-	//处理单独的IP
-	for _, ip := range t.IPAddrs {
+	//主机存活性检测——设置pool中要执行的函数
+	p.Function = func(i interface{}) interface{} {
+		ip := i.(string)
 		if checkAlive(ip) {
-			aliveHosts = append(aliveHosts, ip)
+			return ip
 		}
+		return nil
 	}
 
-	//处理成段的IP
-	for _, rangeobj := range t.IPRanges {
-		start := net.ParseIP(rangeobj.Start)
-		end := net.ParseIP(rangeobj.End)
-		// TODO: 校验合法性。暂且假设都合法
-		for ipobj := start; iplib.CompareIPs(ipobj, end) == -1; ipobj = iplib.NextIP(ipobj) {
-			ip := ipobj.String()
-			fmt.Println(ipobj.String())
-			if checkAlive(ip) {
-				aliveHosts = append(aliveHosts, ip)
+	//主机存活性探测——输出调度
+	go func() {
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			for out := range p.Out {
+				if out != nil {
+					ip := (out).(string)
+					aliveHosts = append(aliveHosts, ip)
+				}
+			}
+			wg.Done()
+		}()
+		wg.Wait()
+	}()
+
+	//主机存活性探测——将要检测的IP加入队列
+	go func() {
+		//1. 把单独列出的IP加入队列
+		for _, ip := range t.IPAddrs {
+			slog.Debug("将" + ip + "加入存活检测队列")
+			p.In <- ip
+		}
+		//2. 把成段给出的IP加入队列
+		for _, rangeobj := range t.IPRanges {
+			start := net.ParseIP(rangeobj.Start)
+			end := net.ParseIP(rangeobj.End)
+			//对于每个范围，遍历该范围内的所有ip
+			for ipobj := start; iplib.CompareIPs(ipobj, end) == -1; ipobj = iplib.NextIP(ipobj) {
+				// TODO: 这里需要校验ip的合法性，例如广播IP、组播IP，暂且假设每个IP都是合法的
+				ip := ipobj.String()
+				slog.Debug("将" + ip + "加入存活检测队列")
+				p.In <- ip
 			}
 		}
-	}
+		//关闭主机存活性探测下发信道
+		slog.Info("主机存活性探测任务下发完毕")
+		p.InDone()
+	}()
+
+	//开始执行主机存活性探测任务
+	p.Run()
+	slog.Warning("主机存活性探测任务完成")
 	return aliveHosts
-	// return []string{"10.2.1.4", "10.2.1.6", "10.2.3.5", "10.5.0.3", "10.6.7.42"}
 }
 
 func checkAlive(ip string) bool {
-	//ICMP或TCP或两者都用
-	return true
+
+	//FIXME: 目前只是模拟一下
+
+	//fmt.Println("检查IP[" + ip + "]的存活性")
+
+	if strings.HasSuffix(ip, "2") || strings.HasSuffix(ip, "4") || strings.HasSuffix(ip, "6") || strings.HasSuffix(ip, "8") || strings.HasSuffix(ip, "0") {
+		return true
+	}
 	//return gonmap.HostDiscovery(ip)
+	return false
 }

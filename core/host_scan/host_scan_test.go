@@ -10,7 +10,7 @@ import (
 func TestLoadTargets(t *testing.T) {
 	// TODO: 编写测试
 
-	fmt.Printf("%#v\n", LoadTargets(types.Config{}))
+	fmt.Printf("\n%#v\n\n", LoadTargets(types.Config{}))
 }
 
 func TestScanTargets(t *testing.T) {
@@ -21,12 +21,13 @@ func TestScanTargets(t *testing.T) {
 			"10.2.4.12", "10.2.4.15",
 		},
 		IPRanges: []types.IPRange{
-			{Start: "10.5.254.253", End: "10.5.255.4"},
-			{Start: "10.6.7.0", End: "10.6.7.6"},
+			{Start: "10.5.254.252", End: "10.5.255.6"},
+			{Start: "10.6.7.0", End: "10.6.7.7"},
 		},
 	}
 
 	var alivehosts []string = ScanTargets(targets)
+	fmt.Println("存活的主机如下：")
 	fmt.Println(alivehosts)
 
 }
