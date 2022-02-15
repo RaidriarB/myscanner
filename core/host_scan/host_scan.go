@@ -33,12 +33,12 @@ func LoadTargets(c types.Config) types.Targets {
 
 //检查主机存活性，返回存活的主机列表
 func ScanTargets(t types.Targets) []string {
-	// FIXME: 需不需要Config参数？
+	// FIXME: 需不需要Config作为参数传入？
 	aliveHosts := []string{}
 	// TODO: 把这个10改成配置
 	var p = pool.NewPool(10)
 
-	//主机存活性检测——设置pool中要执行的函数
+	//1.设置pool中要执行的函数
 	p.Function = func(i interface{}) interface{} {
 		ip := i.(string)
 		if checkAlive(ip) {
@@ -47,7 +47,7 @@ func ScanTargets(t types.Targets) []string {
 		return nil
 	}
 
-	//主机存活性探测——输出调度
+	//2. 输出调度
 	go func() {
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
@@ -63,14 +63,14 @@ func ScanTargets(t types.Targets) []string {
 		wg.Wait()
 	}()
 
-	//主机存活性探测——将要检测的IP加入队列
+	//3. 将要检测的IP加入队列
 	go func() {
-		//1. 把单独列出的IP加入队列
+		//1） 把单独列出的IP加入队列
 		for _, ip := range t.IPAddrs {
 			slog.Debug("将" + ip + "加入存活检测队列")
 			p.In <- ip
 		}
-		//2. 把成段给出的IP加入队列
+		//2） 把成段给出的IP加入队列
 		for _, rangeobj := range t.IPRanges {
 			start := net.ParseIP(rangeobj.Start)
 			end := net.ParseIP(rangeobj.End)
@@ -87,7 +87,7 @@ func ScanTargets(t types.Targets) []string {
 		p.InDone()
 	}()
 
-	//开始执行主机存活性探测任务
+	//4.开始执行主机存活性探测任务
 	p.Run()
 	slog.Warning("主机存活性探测任务完成")
 	return aliveHosts
@@ -102,6 +102,7 @@ func checkAlive(ip string) bool {
 	if strings.HasSuffix(ip, "2") || strings.HasSuffix(ip, "4") || strings.HasSuffix(ip, "6") || strings.HasSuffix(ip, "8") || strings.HasSuffix(ip, "0") {
 		return true
 	}
-	//return gonmap.HostDiscovery(ip)
 	return false
+	//return gonmap.HostDiscovery(ip)
+	//return ping.Check(ip)
 }
