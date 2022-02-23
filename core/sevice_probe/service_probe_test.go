@@ -2,6 +2,8 @@ package service_probe
 
 import (
 	"fmt"
+	"myscanner/core/host_scan"
+	"myscanner/core/port_scan"
 	"myscanner/core/types"
 	"testing"
 )
@@ -16,20 +18,21 @@ func TestServiceProbe(t *testing.T) {
 	twp2 := types.TargetWithPorts{
 		"5.144.173.191": {"8009", "8080", "22", "80"},
 	}
+	_ = twp
 	_ = twp2
-	//_ = twp2
 
-	// targets := types.Targets{
-	// 	IPAddrs: []string{
-	// 		"193.170.192.215", "150.254.36.120", "5.144.173.191",
-	// 	},
-	// 	IPRanges: []types.IPRange{},
-	// }
-	//var alivehosts []string = host_scan.ScanTargets(targets)
-	//var alivehostandports = port_scan.ScanPorts(alivehosts)
-	//result := ServiceProbe(alivehostandports)
+	targets := types.Targets{
+		IPAddrs: []string{
+			"193.170.192.215", "150.254.36.120", "5.144.173.191",
+		},
+		IPRanges: []types.IPRange{},
+	}
+	var alivehosts []string = host_scan.ScanTargets(targets)
+	var alivehostandports = port_scan.ScanPorts(alivehosts)
+	fmt.Println(alivehostandports)
+	result := ServiceProbe(alivehostandports)
 
-	result := ServiceProbe(twp)
+	//result := ServiceProbe(twp)
 	for _, r := range result {
 		fmt.Println(r.Target)
 	}

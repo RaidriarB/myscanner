@@ -181,7 +181,6 @@ func (n *Nmap) Scan(ip string, port int) TcpBanner {
 
 func (n *Nmap) getTcpBanner(p *probe, tls bool) *TcpBanner {
 	b := NewTcpBanner(n.target)
-	//FIXME:这里的问题，http到这就?奇了怪了，有时候可以有时候不可以
 	data, err := p.scan(n.target, tls)
 	if err != nil {
 		b.ErrorMsg = err

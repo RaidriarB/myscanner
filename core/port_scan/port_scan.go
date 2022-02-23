@@ -31,7 +31,7 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 		var SCANALL = false
 
 		// TODO: 把portlist移动到配置文件中
-		portlist := []int{20, 21, 22, 52, 80, 443, 3306, 8080, 11111}
+		portlist := []int{20, 21, 22, 80, 443, 3306, 8009, 8080, 11111}
 
 		for _, host := range aliveHosts {
 			for _, port := range portlist {
@@ -65,7 +65,7 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 
 			upHostWithPorts[host] = append(upHostWithPorts[host], port)
 
-			// FIXME: 下面这些是watchDog的代码
+			// TODO: 下面这些是watchDog的代码
 			// if host.IsOpenPort() == false && host.Length() == len(k.config.Port) && k.config.ClosePing == false {
 			// 	url := fmt.Sprintf("icmp://%s", host.addr)
 			// 	description := color.Red(color.Overturn("Not Open Any Port"))
@@ -84,9 +84,5 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 }
 
 func checkPortAlive(netloc string) bool {
-
-	// if strings.HasSuffix(netloc, "1") || strings.HasSuffix(netloc, "3") || strings.HasSuffix(netloc, "5") || strings.HasSuffix(netloc, "7") || strings.HasSuffix(netloc, "9") {
-	// 	return true
-	// }
 	return gonmap.PortScan("tcp", netloc, 5*1000000000)
 }

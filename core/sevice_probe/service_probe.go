@@ -11,9 +11,9 @@ import (
 
 func ServiceProbe(twp types.TargetWithPorts) types.TargetPortBanners {
 
+	// TODO: pool的进程数也可以写进配置
 	var p = pool.NewPool(10)
 	var result = types.TargetPortBanners{}
-	//var resultchan = make(chan *gonmap.TcpBanner)
 
 	//TODO: 初始化代码需不需要调整一下
 	r := httpfinger.Init()
