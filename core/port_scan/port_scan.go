@@ -3,6 +3,7 @@ package port_scan
 import (
 	"fmt"
 	"myscanner/core/types"
+	"myscanner/lib/gonmap"
 	"myscanner/lib/pool"
 	"myscanner/lib/slog"
 	"strings"
@@ -30,7 +31,7 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 		var SCANALL = false
 
 		// TODO: 把portlist移动到配置文件中
-		portlist := []int{20, 21, 22, 52, 80, 443, 3367, 8080, 11111}
+		portlist := []int{20, 21, 22, 52, 80, 443, 3306, 8080, 11111}
 
 		for _, host := range aliveHosts {
 			for _, port := range portlist {
@@ -84,9 +85,8 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 
 func checkPortAlive(netloc string) bool {
 
-	if strings.HasSuffix(netloc, "1") || strings.HasSuffix(netloc, "3") || strings.HasSuffix(netloc, "5") || strings.HasSuffix(netloc, "7") || strings.HasSuffix(netloc, "9") {
-		return true
-	}
-	//return gonmap.PortScan("tcp", netloc, 3)
-	return false
+	// if strings.HasSuffix(netloc, "1") || strings.HasSuffix(netloc, "3") || strings.HasSuffix(netloc, "5") || strings.HasSuffix(netloc, "7") || strings.HasSuffix(netloc, "9") {
+	// 	return true
+	// }
+	return gonmap.PortScan("tcp", netloc, 5*1000000000)
 }

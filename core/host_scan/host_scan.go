@@ -3,10 +3,10 @@ package host_scan
 
 import (
 	"myscanner/core/types"
+	"myscanner/lib/gonmap"
 	"myscanner/lib/pool"
 	"myscanner/lib/slog"
 	"net"
-	"strings"
 	"sync"
 
 	"github.com/c-robinson/iplib"
@@ -99,10 +99,10 @@ func checkAlive(ip string) bool {
 
 	//fmt.Println("检查IP[" + ip + "]的存活性")
 
-	if strings.HasSuffix(ip, "2") || strings.HasSuffix(ip, "4") || strings.HasSuffix(ip, "6") || strings.HasSuffix(ip, "8") || strings.HasSuffix(ip, "0") {
-		return true
-	}
-	return false
-	//return gonmap.HostDiscovery(ip)
+	// if strings.HasSuffix(ip, "2") || strings.HasSuffix(ip, "4") || strings.HasSuffix(ip, "6") || strings.HasSuffix(ip, "8") || strings.HasSuffix(ip, "0") {
+	// 	return true
+	// }
+	// return false
+	return gonmap.HostDiscovery(ip)
 	//return ping.Check(ip)
 }

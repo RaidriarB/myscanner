@@ -13,6 +13,7 @@ var PROBE_LOAD_REGEXP = regexp.MustCompile("^(UDP|TCP) ([a-zA-Z0-9-_./]+) (?:q\\
 var PROBE_INT_REGEXP = regexp.MustCompile(`^(\d+)$`)
 var PROBE_STRING_REGEXP = regexp.MustCompile(`^([a-zA-Z0-9-_./]+)$`)
 
+//FIXME: totalwaitms可能太小了
 type probe struct {
 	rarity       int
 	ports        *port
@@ -30,7 +31,7 @@ type probe struct {
 func newProbe() *probe {
 	return &probe{
 		rarity:       1,
-		totalwaitms:  time.Duration(0),
+		totalwaitms:  time.Duration(10 * 1000000000),
 		tcpwrappedms: time.Duration(0),
 
 		ports:      newPort(),
