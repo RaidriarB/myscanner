@@ -2,11 +2,16 @@
 package host_scan
 
 import (
+	"bufio"
+	"fmt"
+	"io"
 	"myscanner/core/types"
 	"myscanner/lib/gonmap"
 	"myscanner/lib/pool"
 	"myscanner/lib/slog"
+	"myscanner/settings"
 	"net"
+	"os"
 	"sync"
 
 	"github.com/c-robinson/iplib"
@@ -16,28 +21,49 @@ import (
 func LoadTargets(c types.Config) types.Targets {
 
 	//TODO: 读取信息，进行聚合操作，生成最终要扫描的
+	//targets := types.Targets{}
+	//TODO: 改成配置，不要硬编码
 
-	return types.Targets{
-		IPAddrs: []string{
-			"10.2.1.3", "10.2.1.4", "10.2.1.6", "10.2.1.7", "10.2.1.10", "10.2.1.13",
-			"10.2.3.4", "10.2.3.5", "10.2.3.8", "10.2.3.9",
-			"10.2.4.12", "10.2.4.15",
-		},
-		IPRanges: []types.IPRange{
-			{Start: "10.5.0.0", End: "10.5.255.255"},
-			{Start: "10.6.7.0", End: "10.6.7.255"},
-		},
+	ipaddrs := []string{}
+	ipListFile, err := os.Open("../../settings/known_IP.txt")
+	defer ipListFile.Close()
+	if err != nil {
+		fmt.Printf("known_IP.txt文件不存在")
 	}
 
+	br := bufio.NewReader(ipListFile)
+	lineNumOfFile := 0
+	for {
+		lineNumOfFile++
+		ip, _, err := br.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		if net.ParseIP(string(ip)) == nil {
+			fmt.Printf("IP列表格式有误：第%d行%s，不是合法IP格式", lineNumOfFile, ip)
+
+		} else {
+			ipaddrs = append(ipaddrs, string(ip))
+		}
+	}
+
+	//TODO: 读取范围IP
+	ipranges := []types.IPRange{
+		{Start: "10.5.0.0", End: "10.5.255.255"},
+		{Start: "10.6.7.0", End: "10.6.7.255"},
+	}
+
+	return types.Targets{
+		IPAddrs:  ipaddrs,
+		IPRanges: ipranges,
+	}
 }
 
 //检查主机存活性，返回存活的主机列表
 func ScanTargets(t types.Targets) []string {
 	// FIXME: 需不需要Config作为参数传入？
 	aliveHosts := []string{}
-	// TODO: 把这个10改成配置
-	var p = pool.NewPool(10)
-
+	var p = pool.NewPool(settings.HOST_SCAN_THREADS)
 	//1.设置pool中要执行的函数
 	p.Function = func(i interface{}) interface{} {
 		ip := i.(string)
@@ -95,14 +121,6 @@ func ScanTargets(t types.Targets) []string {
 
 func checkAlive(ip string) bool {
 
-	//FIXME: 目前只是模拟一下
-
-	//fmt.Println("检查IP[" + ip + "]的存活性")
-
-	// if strings.HasSuffix(ip, "2") || strings.HasSuffix(ip, "4") || strings.HasSuffix(ip, "6") || strings.HasSuffix(ip, "8") || strings.HasSuffix(ip, "0") {
-	// 	return true
-	// }
-	// return false
 	return gonmap.HostDiscovery(ip)
 	//return ping.Check(ip)
 }

@@ -6,18 +6,20 @@ import (
 	"myscanner/lib/gonmap"
 	"myscanner/lib/pool"
 	"myscanner/lib/slog"
+	"myscanner/settings"
 	"strings"
+	"time"
 )
 
 func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 
-	var p = pool.NewPool(10)
+	var NUM_OF_TASKS = settings.PORT_SCAN_THREADS
+	var p = pool.NewPool(NUM_OF_TASKS)
 	var upHostWithPorts = make(types.TargetWithPorts)
 
 	//1. 定义端口存活性检测函数
 	p.Function = func(i interface{}) interface{} {
 		netloc := i.(string)
-		// TODO: timeout（3）变成配置
 		if checkPortAlive(netloc) {
 			slog.Debug(netloc, " is open")
 			return netloc
@@ -27,15 +29,15 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 
 	//2. 把要检测的端口加入队列
 	go func() {
-		// TODO: 添加一个配置变量 SCANALL ，代表扫描所有端口
-		var SCANALL = false
+		var SCANALL = settings.SCANALL
 
 		// TODO: 把portlist移动到配置文件中
-		portlist := []int{20, 21, 22, 80, 443, 3306, 8009, 8080, 11111}
+		portlist := settings.PORTLIST
 
 		for _, host := range aliveHosts {
 			for _, port := range portlist {
 				netloc := host + ":" + fmt.Sprintf("%d", port)
+				fmt.Println(netloc, " is in.")
 				p.In <- netloc
 			}
 			if SCANALL {
@@ -84,5 +86,6 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 }
 
 func checkPortAlive(netloc string) bool {
-	return gonmap.PortScan("tcp", netloc, 5*1000000000)
+	timeout := time.Duration(settings.PORT_SCAN_TIMEOUT)
+	return gonmap.PortScan("tcp", netloc, timeout)
 }

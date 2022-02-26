@@ -7,12 +7,12 @@ import (
 	"myscanner/lib/httpfinger"
 	"myscanner/lib/pool"
 	"myscanner/lib/slog"
+	"myscanner/settings"
 )
 
 func ServiceProbe(twp types.TargetWithPorts) types.TargetPortBanners {
 
-	// TODO: pool的进程数也可以写进配置
-	var p = pool.NewPool(10)
+	var p = pool.NewPool(settings.SERVICE_PROBE_THREADS)
 	var result = types.TargetPortBanners{}
 
 	//TODO: 初始化代码需不需要调整一下
