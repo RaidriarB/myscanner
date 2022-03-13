@@ -1,33 +1,31 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"myscanner/core/host_scan"
-	"myscanner/core/port_scan"
-	"myscanner/core/service_probe"
-	"myscanner/core/types"
 )
 
-func add(a, b int) int {
-	return a + b
+func getBeginAndEnd(len int, parts int, which int) (int, int) {
+	if len < 0 || parts <= 0 || which <= 0 || which > parts {
+		panic(errors.New("getBeginAndEnd函数的参数不合法！"))
+	}
+	begin := (len * (which - 1)) / parts
+	end := ((len * which) / parts) - 1
+	//循环时只需要 begin <= i <= end
+	return begin, end
 }
 
 func main() {
-	targets := types.Targets{
-		IPAddrs: []string{
-			"5.144.173.191",
-		},
-		IPRanges: []types.IPRange{},
-	}
-	var alivehosts []string = host_scan.ScanTargets(targets)
-	fmt.Println(alivehosts)
-	var alivehostandports = port_scan.ScanPorts(alivehosts)
-	fmt.Println(alivehostandports)
-	result := service_probe.ServiceProbe(alivehostandports)
 
-	//result := ServiceProbe(twp)
-	for _, r := range result {
-		fmt.Println(r.Target)
+	len := 20
+	parts := 3
+
+	for i := 1; i <= parts; i++ {
+		fmt.Println(getBeginAndEnd(len, parts, i))
 	}
+
+	// startTime := time.Now()
+	// run.StartScan()
+	// fmt.Printf("程序执行总时长为：[%s]\n", time.Since(startTime).String())
 
 }

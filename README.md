@@ -12,3 +12,8 @@
 + logs/ 程序的日志会输出到这个文件夹
 + settings/ 程序的配置文件
 
+## 任务
+弄一下分布式 server client
+可以server给client传递IP段
+使用一下那个随机化思想
+不要扫敏感端口
