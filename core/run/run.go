@@ -18,7 +18,7 @@ func StartScan() {
 
 	//2. 端口存活检测
 	fmt.Println("正在进行端口存活性检测...")
-	aliveHostsAndPorts := scan.ScanPorts(aliveHosts)
+	aliveHostsAndPorts := scan.ScanPorts(aliveHosts, true)
 	time.Sleep(time.Microsecond * 200)
 
 	//3. 服务识别

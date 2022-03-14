@@ -2,6 +2,7 @@ package settings
 
 var PORTLIST_EMPTY = []int{}
 
+//16以内的6个质数
 var PORTLIST_FOR_DEBUG = []int{
 	2, 3, 5, 7, 11, 13,
 }

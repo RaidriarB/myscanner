@@ -31,7 +31,7 @@ func TestScanTargets(t *testing.T) {
 	targets2 := types.Targets{
 		IPAddrs: []string{},
 		IPRanges: []types.IPRange{
-			{Start: "10.5.0.100", End: "10.5.0.149"}, //8个
+			{Start: "10.5.0.100", End: "10.5.0.119"}, //8个
 		},
 	}
 
@@ -49,9 +49,9 @@ func TestScanTargets(t *testing.T) {
 	var randid_s int64 = 12345
 
 	// 别写反了
-	var alivehosts []string = ScanTargetsWithShuffle(targets2, 1, 1, randid_s)
+	var alivehosts []string = ScanTargetsWithShuffle(targets2, 2, 1, randid_s)
 
-	fmt.Println("存活的主机和如下：")
+	fmt.Println("存活的主机如下：")
 	time.Sleep(2 * time.Second)
 	fmt.Println(alivehosts)
 	fmt.Println("存活数", len(alivehosts))

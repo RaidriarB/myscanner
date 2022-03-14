@@ -22,14 +22,14 @@ func ServiceProbeWithShuffle(twp sync.Map, parts int, which int, randID int64) t
 	var result = types.TargetPortBanners{}
 	var threads = settings.SERVICE_PROBE_THREADS
 
-	init_nmap()
+	//InitNmap()
 
 	var lock sync.Mutex
 	p, _ := ants.NewPoolWithFunc(threads, func(i interface{}) {
 		netloc := i.(string)
 		// 这个gonmap.New()不能用一个变量表示，否则会出现并发问题
 		//var n = gonmap.New() 不可以！
-		tcpBanner := gonmap.GetTcpBanner(netloc, gonmap.New(), 20*1000000000)
+		tcpBanner := getBanner(netloc)
 
 		if tcpBanner != nil {
 			uri := tcpBanner.Target.URI()
@@ -70,4 +70,13 @@ func ServiceProbeWithShuffle(twp sync.Map, parts int, which int, randID int64) t
 	wg.Wait()
 	fmt.Println("TCP层协议识别任务完成")
 	return result
+}
+
+func getBanner(netloc string) *gonmap.TcpBanner {
+	if settings.DEV_MODE {
+		return gonmap.GetTcpBanner("127.0.0.1:8080", gonmap.New(), 20*1000000000)
+
+	} else {
+		return gonmap.GetTcpBanner(netloc, gonmap.New(), 20*1000000000)
+	}
 }
