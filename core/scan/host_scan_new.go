@@ -25,7 +25,6 @@ func ScanTargetsWithShuffle(t types.Targets, parts int, which int, randID int64)
 
 	threads := settings.HOST_SCAN_THREADS
 
-	defer ants.Release()
 	p, _ := ants.NewPoolWithFunc(threads, func(i interface{}) {
 		ip := i.(string)
 		if checkAlive(ip) {

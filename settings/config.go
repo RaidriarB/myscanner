@@ -16,8 +16,8 @@ const (
 	CAREFUL_MODE  = true  //不扫描特别常见的敏感端口
 	PORTLIST_MODE = 2     // 1: 最简化 2: top1000 3:完整列表
 
-	PORT_SCAN_THREADS     = 3000
-	HOST_SCAN_THREADS     = 200
+	PORT_SCAN_THREADS     = 6
+	HOST_SCAN_THREADS     = 2
 	SERVICE_PROBE_THREADS = 200
 	PORT_SCAN_TIMEOUT     = 2 * 1000000000 // nanoseconds
 

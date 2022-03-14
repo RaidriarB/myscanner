@@ -43,11 +43,12 @@ func TestScanPorts(t *testing.T) {
 	var alivehosts []string = ScanTargetsWithShuffle(targets2, 3, 1, randid)
 	fmt.Println("存活的主机 ", alivehosts)
 
-	var result = ScanPortsWithShuffle(alivehosts, settings.PORTLIST_FOR_DEBUG, true, 2, 1, randid)
+	var result = ScanPortsWithShuffle(alivehosts, settings.PORTLIST_FOR_DEBUG, true, 1, 1, randid)
 	fmt.Println("存活的主机和端口如下：")
 
 	result.Range(func(k, v interface{}) bool {
-		fmt.Printf("%v:%v \n", k, v)
+		fmt.Printf("%v:%v(len:%d) \n", k, v, len(v.([]string)))
+
 		return true
 	})
 

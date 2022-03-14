@@ -28,7 +28,7 @@ func ScanPorts(aliveHosts []string, SCANALL bool) sync.Map {
 	return ScanPortsWithShuffle(aliveHosts, portlist, SCANALL, 1, 1, time.Now().UnixNano())
 }
 
-func ScanPortsWithShuffle(aliveHosts []string, portlist []int, SCANALL bool, parts int, which int, randID int64) sync.Map {
+func ScanPortsWithShuffle_old(aliveHosts []string, portlist []int, SCANALL bool, parts int, which int, randID int64) sync.Map {
 
 	var NUM_OF_TASKS = settings.PORT_SCAN_THREADS
 	var p = pool.NewPool(NUM_OF_TASKS)
@@ -119,6 +119,7 @@ func checkPortAlive(netloc string) bool {
 
 	fmt.Printf("Checking %s\n", netloc)
 	if settings.DEV_MODE {
+		time.Sleep(300 * time.Millisecond)
 		return true
 	} else {
 		timeout := time.Duration(settings.PORT_SCAN_TIMEOUT)
