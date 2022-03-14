@@ -3,16 +3,17 @@ package scan
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"myscanner/core/types"
+	"myscanner/lib/gonmap"
 	"myscanner/lib/pool"
 	"myscanner/lib/slog"
 	"myscanner/settings"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/c-robinson/iplib"
@@ -58,9 +59,11 @@ func ScanTargets(t types.Targets) []string {
 }
 
 //检查主机存活性，返回存活的主机列表，分布式模式，
-func ScanTargetsWithShuffle(t types.Targets, parts int, which int, randID int64) []string {
+//TODO: 好像没扫完就把结果返回了，这样不行
+func ScanTargetsWithShuffle_old(t types.Targets, parts int, which int, randID int64) []string {
 	aliveHosts := []string{}
 	hostsToScan := []string{}
+	var lock sync.Mutex
 
 	var p = pool.NewPool(settings.HOST_SCAN_THREADS)
 
@@ -78,12 +81,16 @@ func ScanTargetsWithShuffle(t types.Targets, parts int, which int, randID int64)
 		for out := range p.Out {
 			if out != nil {
 				ip := (out).(string)
+
+				lock.Lock()
 				aliveHosts = append(aliveHosts, ip)
+				lock.Unlock()
 			}
 		}
 	}()
 
 	//3. 将要检测的IP加入队列
+	// 只有一个进程操作，应该不用加锁
 	go func() {
 		//1） 把单独列出的IP加入待扫描队列
 		hostsToScan = append(hostsToScan, t.IPAddrs...)
@@ -98,6 +105,7 @@ func ScanTargetsWithShuffle(t types.Targets, parts int, which int, randID int64)
 				// TODO: 这里需要校验ip的合法性，例如广播IP、组播IP，暂且假设每个IP都是合法的
 				ip := ipobj.String()
 				//slog.Debug("将" + ip + "加入存活检测队列")
+
 				hostsToScan = append(hostsToScan, ip)
 				//p.In <- ip
 			}
@@ -106,7 +114,7 @@ func ScanTargetsWithShuffle(t types.Targets, parts int, which int, randID int64)
 		//3) 打乱并加入队列
 		numOfHosts := len(hostsToScan)
 
-		fmt.Println("要扫描 ", numOfHosts)
+		fmt.Println("要扫描 ", numOfHosts, "个主机")
 
 		rand.Seed(randID)
 		rand.Shuffle(numOfHosts, func(i, j int) { hostsToScan[i], hostsToScan[j] = hostsToScan[j], hostsToScan[i] })
@@ -134,21 +142,12 @@ func ScanTargetsWithShuffle(t types.Targets, parts int, which int, randID int64)
 }
 
 func checkAlive(ip string) bool {
-	//fmt.Printf("checking %s\n", ip)
-
-	//return gonmap.HostDiscovery(ip)
-	//return ping.Check(ip)
-	return true
-}
-
-// 一列数，分成parts份，取第which份，求开始和结束的下标
-// which从0开始计数
-func getBeginAndEnd(len int, parts int, which int) (int, int) {
-	if len < 0 || parts <= 0 || which <= 0 || which > parts {
-		panic(errors.New("getBeginAndEnd函数的参数不合法！"))
+	fmt.Printf("checking %s\n", ip)
+	if settings.DEV_MODE {
+		time.Sleep(1 * time.Second)
+		return true
+	} else {
+		return gonmap.HostDiscovery(ip)
+		//return ping.Check(ip)
 	}
-	begin := (len * (which - 1)) / parts
-	end := ((len * which) / parts) - 1
-	//循环时只需要 begin <= i <= end
-	return begin, end
 }

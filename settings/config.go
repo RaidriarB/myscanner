@@ -3,6 +3,11 @@ package settings
 import "myscanner/core/types"
 
 const (
+	DEV_MODE = true // 开发模式
+	MAXPORT  = 16   // 端口从1扫到多少，正常设为65536
+)
+
+const (
 
 	//TODO: implement
 	SCAN_STEPS = 3 // 1:仅检测主机存活性 2:仅探测主机和端口 3:并且识别banner

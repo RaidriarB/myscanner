@@ -2,20 +2,38 @@ package scan
 
 import (
 	"fmt"
-	"myscanner/core/types"
+	"math/rand"
 	"myscanner/lib/gonmap"
 	"myscanner/lib/pool"
 	"myscanner/lib/slog"
 	"myscanner/settings"
 	"strings"
+	"sync"
 	"time"
 )
 
-func ScanPorts(aliveHosts []string) types.TargetWithPorts {
+func ScanPorts(aliveHosts []string, SCANALL bool) sync.Map {
+	var portlist []int
+	switch settings.PORTLIST_MODE {
+	case 1:
+		portlist = settings.PORTLIST_SIMPLIFIED
+	case 2:
+		portlist = settings.PORTLIST_TOP1000
+	case 3:
+		portlist = settings.PORTLIST
+	default:
+		fmt.Println("PORTLIST_MODE的值不合法！ 默认使用top1000")
+		portlist = settings.PORTLIST_TOP1000
+	}
+	return ScanPortsWithShuffle(aliveHosts, portlist, SCANALL, 1, 1, time.Now().UnixNano())
+}
+
+func ScanPortsWithShuffle(aliveHosts []string, portlist []int, SCANALL bool, parts int, which int, randID int64) sync.Map {
 
 	var NUM_OF_TASKS = settings.PORT_SCAN_THREADS
 	var p = pool.NewPool(NUM_OF_TASKS)
-	var upHostWithPorts = make(types.TargetWithPorts)
+	var upHostWithPorts sync.Map
+	var netlocsToScan []string
 
 	//1. 定义端口存活性检测函数
 	p.Function = func(i interface{}) interface{} {
@@ -29,40 +47,47 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 
 	//2. 把要检测的端口加入队列
 	go func() {
-		var SCANALL = settings.SCANALL
-
-		var portlist []int
-
-		switch settings.PORTLIST_MODE {
-		case 1:
-			portlist = settings.PORTLIST_SIMPLIFIED
-		case 2:
-			portlist = settings.PORTLIST_TOP1000
-		case 3:
-			portlist = settings.PORTLIST
-		default:
-			fmt.Println("PORTLIST_MODE的值不合法！ 默认使用top1000")
-			portlist = settings.PORTLIST_TOP1000
-		}
 
 		for _, host := range aliveHosts {
 			for _, port := range portlist {
 				netloc := host + ":" + fmt.Sprintf("%d", port)
-				p.In <- netloc
+				netlocsToScan = append(netlocsToScan, netloc)
+				//p.In <- netloc
 			}
 			if SCANALL {
-				isScanned := [65536]bool{}
+
+				isScanned := [settings.MAXPORT]bool{}
 				for _, port := range portlist {
 					isScanned[int(port)] = true
 				}
-				for port := 1; port <= 65535; port++ {
+				for port := 1; port < settings.MAXPORT; port++ {
 					if !isScanned[port] {
 						netloc := host + ":" + fmt.Sprintf("%d", port)
-						p.In <- netloc
+						netlocsToScan = append(netlocsToScan, netloc)
+						//p.In <- netloc
 					}
 				}
 
 			}
+		}
+
+		//3) 打乱并加入队列
+		numOfNetlocs := len(netlocsToScan)
+
+		fmt.Println("要扫描 ", numOfNetlocs, "个 net location")
+
+		rand.Seed(randID)
+		rand.Shuffle(numOfNetlocs, func(i, j int) { netlocsToScan[i], netlocsToScan[j] = netlocsToScan[j], netlocsToScan[i] })
+
+		//fmt.Println("打乱后:", hostsToScan)
+
+		begin, end := getBeginAndEnd(numOfNetlocs, parts, which)
+
+		fmt.Printf("下标:%d->%d\n", begin, end)
+
+		for i := begin; i <= end; i++ {
+			fmt.Println("准备放入队列:", netlocsToScan[i])
+			p.In <- netlocsToScan[i]
 		}
 		slog.Info("端口存活性探测任务下发完毕")
 		p.InDone()
@@ -75,7 +100,12 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 			host := strings.Split(netloc, ":")[0]
 			port := strings.Split(netloc, ":")[1]
 
-			upHostWithPorts[host] = append(upHostWithPorts[host], port)
+			lst := []string{}
+			if value, ok := upHostWithPorts.Load(host); ok {
+				lst = value.([]string)
+			}
+			lst = append(lst, port)
+			upHostWithPorts.Store(host, lst)
 		}
 	}()
 
@@ -86,6 +116,12 @@ func ScanPorts(aliveHosts []string) types.TargetWithPorts {
 }
 
 func checkPortAlive(netloc string) bool {
-	timeout := time.Duration(settings.PORT_SCAN_TIMEOUT)
-	return gonmap.PortScan("tcp", netloc, timeout)
+
+	fmt.Printf("Checking %s\n", netloc)
+	if settings.DEV_MODE {
+		return true
+	} else {
+		timeout := time.Duration(settings.PORT_SCAN_TIMEOUT)
+		return gonmap.PortScan("tcp", netloc, timeout)
+	}
 }

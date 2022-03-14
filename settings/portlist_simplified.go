@@ -1,7 +1,10 @@
 package settings
 
-// erpc
-// golang 微服务
+var PORTLIST_EMPTY = []int{}
+
+var PORTLIST_FOR_DEBUG = []int{
+	2, 3, 5, 7, 11, 13,
+}
 
 var PORTLIST_SIMPLIFIED = []int{
 	20, 21, 22, 23, 25, 53, 69, 80, 110, 135, 137, 443, 445, 1080, 1433, 1434, 1521, 1863, 2100, 3306, 3389, 5000, 8080, 8000, 9080, 9090,

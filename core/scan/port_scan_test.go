@@ -3,8 +3,8 @@ package scan
 import (
 	"fmt"
 	"myscanner/core/types"
+	"myscanner/settings"
 	"testing"
-	"time"
 )
 
 func TestScanPorts(t *testing.T) {
@@ -38,10 +38,17 @@ func TestScanPorts(t *testing.T) {
 	_ = targets1
 	_ = targets3
 
-	var randid = time.Now().UnixNano()
-	var alivehosts []string = ScanTargetsWithShuffle(targets2, 3, 2, randid)
-	var result = ScanPorts(alivehosts)
+	//var randid = time.Now().UnixNano()
+	var randid int64 = 12345
+	var alivehosts []string = ScanTargetsWithShuffle(targets2, 3, 1, randid)
+	fmt.Println("存活的主机 ", alivehosts)
+
+	var result = ScanPortsWithShuffle(alivehosts, settings.PORTLIST_FOR_DEBUG, true, 2, 1, randid)
 	fmt.Println("存活的主机和端口如下：")
-	fmt.Println(result)
+
+	result.Range(func(k, v interface{}) bool {
+		fmt.Printf("%v:%v \n", k, v)
+		return true
+	})
 
 }
