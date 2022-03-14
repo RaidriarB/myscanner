@@ -4,65 +4,70 @@ import (
 	"fmt"
 	"myscanner/core/types"
 	"myscanner/lib/gonmap"
-	"myscanner/lib/httpfinger"
-	"myscanner/lib/pool"
 	"myscanner/lib/slog"
 	"myscanner/settings"
+	"sync"
+	"time"
+
+	"github.com/panjf2000/ants/v2"
 )
 
-func ServiceProbe(twp types.TargetWithPorts) types.TargetPortBanners {
+func ServiceProbe(twp sync.Map) types.TargetPortBanners {
+	return ServiceProbeWithShuffle(twp, 1, 1, time.Now().UnixNano())
+}
 
-	var p = pool.NewPool(settings.SERVICE_PROBE_THREADS)
+func ServiceProbeWithShuffle(twp sync.Map, parts int, which int, randID int64) types.TargetPortBanners {
+
+	var wg sync.WaitGroup
 	var result = types.TargetPortBanners{}
+	var threads = settings.SERVICE_PROBE_THREADS
 
-	//TODO: 初始化代码需不需要调整一下
-	r := httpfinger.Init()
-	slog.Infof("成功加载favicon指纹:[%d]条，keyword指纹:[%d]条", r["FaviconHash"], r["KeywordFinger"])
-	//gonmap探针/指纹库初始化
-	r = gonmap.Init(9, 5*1000000000)
-	slog.Infof("成功加载NMAP探针:[%d]个,指纹[%d]条", r["PROBE"], r["MATCH"])
+	init_nmap()
 
-	p.Function = func(i interface{}) interface{} {
+	var lock sync.Mutex
+	p, _ := ants.NewPoolWithFunc(threads, func(i interface{}) {
 		netloc := i.(string)
 		// 这个gonmap.New()不能用一个变量表示，否则会出现并发问题
 		//var n = gonmap.New() 不可以！
-		r := gonmap.GetTcpBanner(netloc, gonmap.New(), 20*1000000000)
-		return r
-	}
+		tcpBanner := gonmap.GetTcpBanner(netloc, gonmap.New(), 20*1000000000)
 
-	//启用TCP层面协议识别任务下发器
-	go func() {
-		for host, ports := range twp {
-			for _, port := range ports {
-				netloc := host + ":" + port
-				p.In <- netloc
-			}
-		}
-		slog.Info("TCP层协议识别任务下发完毕")
-		p.InDone()
-	}()
-
-	//启用TCP层指纹探测结果接受器
-	go func() {
-		for out := range p.Out {
-			if out == nil {
-				continue
-			}
-			tcpBanner := out.(*gonmap.TcpBanner)
-			if tcpBanner == nil {
-				continue
-			}
-
+		if tcpBanner != nil {
 			uri := tcpBanner.Target.URI()
 			status := tcpBanner.Status
 			service := tcpBanner.TcpFinger.Service
 			slog.Debugf("%s %s %s", uri, status, service)
+			lock.Lock()
 			result = append(result, tcpBanner)
+			lock.Unlock()
 		}
-	}()
+		wg.Done()
+	})
+	defer p.Release()
 
-	//开始执行TCP层面协议识别任务
-	p.Run()
+	var netlocsToProbe []string
+	twp.Range(func(host, ports interface{}) bool {
+		for _, port := range ports.([]string) {
+			netloc := host.(string) + ":" + port
+			netlocsToProbe = append(netlocsToProbe, netloc)
+		}
+		return true
+	})
+	numOfProbes := len(netlocsToProbe)
+	fmt.Println("要服务识别 ", numOfProbes, "个 loc")
+
+	shuffleStringArray(netlocsToProbe, randID)
+	//fmt.Println("打乱后:", netlocsToProbe)
+
+	begin, end := getBeginAndEnd(numOfProbes, parts, which)
+	fmt.Printf("下标:%d->%d\n", begin, end)
+
+	for i := begin; i <= end; i++ {
+		wg.Add(1)
+		fmt.Println("准备放入队列:", netlocsToProbe[i])
+		_ = p.Invoke(string(netlocsToProbe[i]))
+	}
+
+	wg.Wait()
 	fmt.Println("TCP层协议识别任务完成")
 	return result
 }
