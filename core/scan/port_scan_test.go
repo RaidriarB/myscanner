@@ -40,16 +40,20 @@ func TestScanPorts(t *testing.T) {
 
 	//var randid = time.Now().UnixNano()
 	var randid int64 = 12345
-	var alivehosts []string = ScanTargetsWithShuffle(targets2, 3, 1, randid)
+	var alivehosts []string = ScanTargetsWithShuffle(targets2, 2, 1, randid)
 	fmt.Println("存活的主机 ", alivehosts)
 
 	var result = ScanPortsWithShuffle(alivehosts, settings.PORTLIST_FOR_DEBUG, true, 1, 1, randid)
 	fmt.Println("存活的主机和端口如下：")
 
-	result.Range(func(k, v interface{}) bool {
-		fmt.Printf("%v:%v(len:%d) \n", k, v, len(v.([]string)))
+	for k, v := range result {
+		fmt.Printf("%v:%v(len:%d) \n", k, v, len(v))
+	}
 
-		return true
-	})
+	// result.Range(func(k, v interface{}) bool {
+	// 	fmt.Printf("%v:%v(len:%d) \n", k, v, len(v.([]string)))
+
+	// 	return true
+	// })
 
 }

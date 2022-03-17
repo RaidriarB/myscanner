@@ -2,8 +2,6 @@ package scan
 
 import (
 	"fmt"
-	"myscanner/core/types"
-	"myscanner/lib/gonmap"
 	"myscanner/lib/slog"
 	"myscanner/settings"
 	"strings"
@@ -14,7 +12,7 @@ import (
 )
 
 //根据config中的portlist模式来扫描
-func ScanPorts(aliveHosts []string, SCANALL bool) types.TargetWithPorts {
+func ScanPorts_old(aliveHosts []string, SCANALL bool) sync.Map {
 	var portlist []int
 	switch settings.PORTLIST_MODE {
 	case 1:
@@ -31,15 +29,13 @@ func ScanPorts(aliveHosts []string, SCANALL bool) types.TargetWithPorts {
 		fmt.Println("PORTLIST_MODE的值不合法！ 默认使用top1000")
 		portlist = settings.PORTLIST_TOP1000
 	}
-	return ScanPortsWithShuffle(aliveHosts, portlist, SCANALL, 1, 1, time.Now().UnixNano())
+	return ScanPortsWithShuffle_old(aliveHosts, portlist, SCANALL, 1, 1, time.Now().UnixNano())
 }
 
-func ScanPortsWithShuffle(aliveHosts []string, portlist []int, SCANALL bool, parts int, which int, randID int64) types.TargetWithPorts {
+func ScanPortsWithShuffle_old(aliveHosts []string, portlist []int, SCANALL bool, parts int, which int, randID int64) sync.Map {
 
 	var threads = settings.PORT_SCAN_THREADS
 
-	//内部使用sync.Map
-	//但是返回给外部一个map
 	var upHostWithPorts sync.Map
 	var netlocsToScan []string
 
@@ -107,26 +103,5 @@ func ScanPortsWithShuffle(aliveHosts []string, portlist []int, SCANALL bool, par
 	}
 	wg.Wait()
 	fmt.Println("端口存活性探测任务完成")
-
-	//将smap转换为map
-	result := make(types.TargetWithPorts)
-	upHostWithPorts.Range(func(k, v interface{}) bool {
-		//fmt.Printf("%v:%v(len:%d) \n", k, v, len(v.([]string)))
-		result[k.(string)] = v.([]string)
-		return true
-	})
-
-	return result
-}
-
-func checkPortAlive(netloc string) bool {
-
-	fmt.Printf("Checking %s\n", netloc)
-	if settings.DEV_MODE {
-		time.Sleep(100 * time.Millisecond)
-		return true
-	} else {
-		timeout := time.Duration(settings.PORT_SCAN_TIMEOUT)
-		return gonmap.PortScan("tcp", netloc, timeout)
-	}
+	return upHostWithPorts
 }

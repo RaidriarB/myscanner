@@ -10,6 +10,8 @@ import (
 
 // 一列数，分成parts份，取第which份，求开始和结束的下标。（which从1开始计数）
 func getBeginAndEnd(len int, parts int, which int) (int, int) {
+
+	// 对于3个任务分给5个核这种情况也不会有bug
 	if len < 0 || parts <= 0 || which <= 0 || which > parts {
 		panic(errors.New("getBeginAndEnd函数的参数不合法！"))
 	}
@@ -19,7 +21,7 @@ func getBeginAndEnd(len int, parts int, which int) (int, int) {
 	return begin, end
 }
 
-//将一个字符串数组用特定的随机种子打乱
+//将一个字符串数组用给定的随机种子打乱
 func shuffleStringArray(a []string, randID int64) {
 
 	rand.Seed(randID)
@@ -27,7 +29,7 @@ func shuffleStringArray(a []string, randID int64) {
 	rand.Shuffle(numOfHosts, func(i, j int) { a[i], a[j] = a[j], a[i] })
 }
 
-//初始化gonmap模块
+//初始化gonmap模块，服务识别前需要先调用它
 func InitNmap() {
 	r := httpfinger.Init()
 	slog.Infof("成功加载favicon指纹:[%d]条，keyword指纹:[%d]条", r["FaviconHash"], r["KeywordFinger"])

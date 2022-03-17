@@ -11,9 +11,9 @@ import (
 )
 
 //在本地模拟分布式
-func NativeScan(parts int) {
+// TODO: 需要优雅一点
+func NativeScan(parts int, targets types.Targets) {
 
-	var targets = scan.LoadTargets()
 	var randID int64 = 1234567
 
 	//1. 主机存活检测
@@ -44,7 +44,7 @@ func NativeScan(parts int) {
 
 	//2. 端口存活检测
 	fmt.Println("正在进行端口存活性检测...")
-	var aliveHostsAndPorts sync.Map
+	var aliveHostsAndPorts = make(types.TargetWithPorts)
 	var wg2 sync.WaitGroup
 	var lock2 sync.Mutex
 
@@ -68,15 +68,19 @@ func NativeScan(parts int) {
 
 			//将部分整合
 			lock2.Lock()
-			aliveHostsAndPorts_part.Range(func(k, v interface{}) bool {
-				lst := []string{}
-				if v, ok := aliveHostsAndPorts.Load(k); ok {
-					lst = v.([]string)
-				}
-				lst = append(lst, v.([]string)...)
-				aliveHostsAndPorts.Store(k, lst)
-				return true
-			})
+			// aliveHostsAndPorts_part.Range(func(k, v interface{}) bool {
+			// 	lst := []string{}
+			// 	if v, ok := aliveHostsAndPorts.Load(k); ok {
+			// 		lst = v.([]string)
+			// 	}
+			// 	lst = append(lst, v.([]string)...)
+			// 	aliveHostsAndPorts.Store(k, lst)
+			// 	return true
+			// })
+			for k, v := range aliveHostsAndPorts_part {
+				newv := aliveHostsAndPorts_part[k]
+				aliveHostsAndPorts[k] = append(v, newv...)
+			}
 			lock2.Unlock()
 
 			fmt.Printf("第%d个部分扫描完成。\n", w)
@@ -86,10 +90,13 @@ func NativeScan(parts int) {
 	wg2.Wait()
 
 	fmt.Println("---输出端口存活结果如下:")
-	aliveHostsAndPorts.Range(func(k, v interface{}) bool {
-		fmt.Printf("%v:%v(len:%d) \n", k, v, len(v.([]string)))
-		return true
-	})
+	// aliveHostsAndPorts.Range(func(k, v interface{}) bool {
+	// 	fmt.Printf("%v:%v(len:%d) \n", k, v, len(v.([]string)))
+	// 	return true
+	// })
+	for k, v := range aliveHostsAndPorts {
+		fmt.Printf("%v:%v(len:%d) \n", k, v, len(v))
+	}
 	fmt.Println("---输出完毕.")
 
 	time.Sleep(time.Microsecond * 500)

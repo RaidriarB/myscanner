@@ -3,8 +3,8 @@ package settings
 import "myscanner/core/types"
 
 const (
-	DEV_MODE = false // 开发模式
-	MAXPORT  = 65536 // 端口从1扫到多少，正常设为65536
+	DEV_MODE = true // 开发模式
+	MAXPORT  = 16   // 端口从1扫到多少，正常设为65536
 )
 
 const (
@@ -12,11 +12,11 @@ const (
 	//TODO: implement
 	SCAN_STEPS = 3 // 1:仅检测主机存活性 2:仅探测主机和端口 3:并且识别banner
 
-	SCANALL = false // 是否全部扫描65536个端口
+	SCANALL = true // 是否扫描所有端口
 
 	CAREFUL_MODE = true //TODO: implement 不扫描特别常见的敏感端口
 
-	PORTLIST_MODE = 3 // 1: 空端口列表 2: debug的简单列表 3:建议列表 4:top1000列表 5:完整列表
+	PORTLIST_MODE = 2 // 1: 空端口列表 2: debug的简单列表 3:建议列表 4:top1000列表 5:完整列表
 
 	PORT_SCAN_THREADS     = 6
 	HOST_SCAN_THREADS     = 2
