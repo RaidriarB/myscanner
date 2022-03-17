@@ -180,12 +180,6 @@ func ServiceProbeDistributed(aliveHostsAndPorts types.TargetWithPorts) types.Tar
 			reply := &ServiceProbeReply{}
 			CallRPC(addr, "ScanUnit", "ServiceProbe", args, reply)
 
-			// err := xclient.Call(context.Background(), "ServiceProbe", args, reply)
-			// if err != nil {
-			// 	//TODO: error handling
-			// 	fmt.Printf("failed to call: %v\n", err)
-			// }
-
 			fmt.Printf("第%d个的回复:%#v\n", w, reply)
 
 			result_part := reply.Result
@@ -207,13 +201,14 @@ func ServiceProbeDistributed(aliveHostsAndPorts types.TargetWithPorts) types.Tar
 }
 
 func CallRPC(addr string, path string, name string, args interface{}, reply interface{}) {
-	//rpc-准备工作
+	//1. 准备工作
 	d, _ := client.NewPeer2PeerDiscovery("tcp@"+addr, "")
 	opt := client.DefaultOption
 	opt.SerializeType = protocol.MsgPack
 	xclient := client.NewXClient(path, client.Failtry, client.RandomSelect, d, opt)
 	defer xclient.Close()
 
+	//2. 调用
 	err := xclient.Call(context.Background(), name, args, reply)
 	if err != nil {
 		//TODO: error handling
